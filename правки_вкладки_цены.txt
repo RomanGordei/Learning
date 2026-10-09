@@ -1,0 +1,276 @@
+ПРАВКИ ВКЛАДКИ «ЦЕНЫ»
+Одинаковые для make_dashboard.py и make_dashboard_bul.py. Пять замен, порядок любой.
+Блок между строками «▼ НАЧАЛО» и «▲ КОНЕЦ» заменяет старый целиком; сами эти строки не копируй.
+
+========================================================================
+1. СПРАВОЧНИК — Python, блок СПРАВОЧНИК в начале файла
+========================================================================
+Найди шесть записей подряд: от строки
+    ("Средняя упаковка", ...
+до строки, которая начинается с
+    ("ND", "Нумерическая дистрибуция
+Удали их (строку ("ND", ... оставь) и вставь вместо них:
+▼ НАЧАЛО — копируй со следующей строки
+    ("Средняя цена упаковки", "Деньги, делённые на штуки за весь выбранный период: сколько "
+                              "в среднем стоит одна упаковка. Считается для категории, "
+                              "производителя и бренда. Это не среднее из месячных цен, "
+                              "поэтому за 12 месяцев она честная.", "нет"),
+    ("Цена килограмма", "Деньги, делённые на килограммы. Сравнивает бренды без учёта "
+                        "фасовки: тяжёлая упаковка дороже, но не обязательно дороже "
+                        "за килограмм.", "нет"),
+    ("Индекс цены", "Цена упаковки к средней цене упаковки по категории, категория = 100. "
+                    "120 — упаковка на 20% дороже средней, 85 — на 15% дешевле. Индекс "
+                    "зависит от фасовки, поэтому для сравнения без неё смотрите цену "
+                    "килограмма.", "нет"),
+    ("Почему меняется цена", "Средняя цена упаковки категории меняется по двум причинам: "
+                             "бренды меняют цены — или покупатели переходят от одних "
+                             "брендов к другим. Если часть покупателей ушла от дешёвого "
+                             "бренда к дорогому, средняя цена вырастет, даже когда никто "
+                             "цену не менял. Вкладка «Цены» раскладывает изменение в "
+                             "рублях: цена год назад + изменение цен брендов + переход "
+                             "покупателей = цена сейчас.", "—"),
+▲ КОНЕЦ — до предыдущей строки включительно
+
+========================================================================
+2. СТИЛИ — в <style>
+========================================================================
+Найди строки от
+  /* ---------- цены ---------- */
+  .pricekpi{display:flex; ...
+до строки
+  #priceTable tr.special td{ ... }
+Строку #priceTable tr.special td оставь, всё над ней до комментария замени на:
+▼ НАЧАЛО — копируй со следующей строки
+  /* ---------- цены: равенство «год назад + цены + переход = сейчас» ---------- */
+  .bridge:empty{display:none}
+  .bridge{margin:4px 0 18px;max-width:1120px}
+  .bridge-h{font-size:13px;font-weight:600;margin:0 0 8px}
+  .bridge-row{display:flex;align-items:stretch;gap:10px}
+  .bridge .bx{flex:1 1 0;min-width:0;border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+  .bridge .bx.now{background:var(--rail);border-color:#c4cdd3}
+  .bridge .bx-l{font-size:12px;color:var(--mute);margin-bottom:2px}
+  .bridge .bx-v{font-size:22px;font-weight:600;letter-spacing:-.01em;line-height:1.25;white-space:nowrap}
+  .bridge .bx-n{font-size:12px;color:var(--mute);margin-top:4px;line-height:1.4}
+  .bridge .op{flex:none;align-self:center;width:18px;text-align:center;font-size:24px;font-weight:600;color:var(--mute)}
+  .bridge-help{font-size:13px;color:var(--mute);margin:8px 0 0;max-width:92ch;line-height:1.5}
+  @media (max-width:900px){
+    .bridge-row{flex-direction:column;gap:4px}
+    .bridge .op{align-self:flex-start;padding-left:14px;font-size:20px}
+  }
+▲ КОНЕЦ — до предыдущей строки включительно
+
+========================================================================
+3. РАЗМЕТКА ВКЛАДКИ — HTML в шаблоне
+========================================================================
+Найди блок от
+    <section class="panel" id="p-price" hidden>
+до его закрывающего </section> — сразу за ним идёт
+    <section class="panel" id="p-trend" hidden>
+Замени блок целиком на:
+▼ НАЧАЛО — копируй со следующей строки
+    <section class="panel" id="p-price" hidden>
+      <div class="catlead" id="priceLead"></div>
+      <div class="bridge" id="priceBridge"></div>
+      <div class="ctlrow">
+        <span class="seg" id="priceDim">
+          <button data-v="brand" aria-pressed="true">Бренды</button>
+          <button data-v="manuf" aria-pressed="false">Производители</button>
+        </span>
+      </div>
+      <p class="hint" id="priceHint"></p>
+      <table id="priceTable">
+        <colgroup><col><col><col class="gs"><col class="gs"><col><col><col class="gs"><col></colgroup>
+        <thead>
+          <tr class="gr"><th colspan="2"></th><th></th><th colspan="3">Цена упаковки</th>
+            <th colspan="2">Цена килограмма</th></tr>
+          <tr class="cl"><th></th><th id="priceDimHead">Бренд</th>
+            <th title="Доля в продажах в штуках">Доля, шт</th>
+            <th>₽</th><th>Δ %</th>
+            <th title="Цена упаковки к средней по категории; категория = 100">Индекс</th>
+            <th>₽</th><th>Δ %</th></tr>
+        </thead><tbody></tbody></table>
+    </section>
+▲ КОНЕЦ — до предыдущей строки включительно
+
+========================================================================
+4. ВКЛАДКА «КАТЕГОРИЯ» — три строки в функции catInsight (JS)
+========================================================================
+Было:
+    t += ` Рост в деньгах дала цена, а не объём: средняя упаковка стоит ${pr}, на ${fmt(Math.abs(dp),1)}% дороже, чем годом раньше.`;
+Стало:
+    t += ` Рост в деньгах дала цена, а не объём: средняя цена упаковки — ${pr}, на ${fmt(Math.abs(dp),1)}% выше, чем годом раньше.`;
+
+Было:
+    t += ` Штук продаётся больше, а денег меньше: средняя упаковка подешевела на ${fmt(Math.abs(dp),1)}%, до ${pr}.`;
+Стало:
+    t += ` Штук продаётся больше, а денег меньше: средняя цена упаковки снизилась на ${fmt(Math.abs(dp),1)}%, до ${pr}.`;
+
+Было:
+    t += ` Средняя упаковка стоит ${pr} — на ${fmt(Math.abs(dp),1)}% ${dp>0?'дороже':'дешевле'}, чем годом раньше.`;
+Стало:
+    t += ` Средняя цена упаковки — ${pr}, на ${fmt(Math.abs(dp),1)}% ${dp>0?'выше':'ниже'}, чем годом раньше.`;
+
+По желанию — только комментарий, на работу не влияет.
+Было:
+  /* средняя стоимость упаковки: тыс руб / тыс упак = рублей за упаковку */
+Стало:
+  /* средняя цена упаковки: тыс руб / тыс упак = рублей за упаковку */
+
+========================================================================
+5. ЛОГИКА ВКЛАДКИ — JS в <script>
+========================================================================
+Найди в <script> комментарий (не тот, что в <style>)
+/* ---------- цены ---------- */
+/* Цена — деньги, делённые на штуки (или килограммы) за весь период, а не среднее
+и всё ниже, включая функцию renderPrice целиком, до строки
+/* вкладки */
+Строку /* вкладки */ оставь, всё над ней до комментария замени на:
+▼ НАЧАЛО — копируй со следующей строки
+/* ---------- цены ---------- */
+/* Цена — деньги, делённые на штуки (или килограммы) за весь период, а не среднее
+   месячных цен. Изменение средней цены упаковки категории раскладывается в рублях:
+   цена год назад + изменение цен самих брендов (при прежней доле каждого в штуках)
+   + переход покупателей между брендами = цена сейчас. Переход считается остатком
+   в копейках, поэтому равенство на экране сходится точно. */
+function renderPrice(){
+  const dim = state.priceDim, cube = dim==='manuf' ? 'manuf' : 'brand';
+  const W = dim==='manuf'
+    ? {head:'Производитель', who:'производители', gen:'производителей', one:'производителя',
+       between:'между производителями', to:'производителям'}
+    : {head:'Бренд', who:'бренды', gen:'брендов', one:'бренда',
+       between:'между брендами', to:'брендам'};
+  const names = D.cubes[cube].names, m = state.mkt, p = state.per, pp = cmpPer();
+  $('#priceDimHead').textContent = W.head;
+  const rt = per => { const t = totalMap.get(m+'|'+per); return t ? [t[0], t[1], t[2]] : [0,0,0]; };
+  const C1 = rt(p), C0 = pp>=0 ? rt(pp) : [0,0,0];
+  const ppack = r => r[0]>0 ? r[1]/r[0] : null, pkg = r => r[2]>0 ? r[1]/r[2] : null;
+  const P1 = ppack(C1), P0 = ppack(C0), K1 = pkg(C1), K0 = pkg(C0);
+  const dP = (P1!=null && P0) ? (P1/P0-1)*100 : null, dK = (K1!=null && K0) ? (K1/K0-1)*100 : null;
+
+  /* строки уровня; то, что есть в категории, но не в строках (бренды вне словаря), —
+     отдельной строкой, иначе разложение не сошлось бы с ценой категории */
+  const rows = [], n1 = [0,0,0], n0 = [0,0,0];
+  names.forEach((nm,i)=>{
+    const r1 = rec(cube,i,m,p), r0 = pp>=0 ? rec(cube,i,m,pp) : null;
+    const a = r1 ? [r1[0],r1[1],r1[2]] : [0,0,0], b = r0 ? [r0[0],r0[1],r0[2]] : [0,0,0];
+    for (let j=0;j<3;j++){ n1[j]+=a[j]; n0[j]+=b[j]; }
+    rows.push({name:nm, a, b,
+      own: dim==='brand' ? ownSet.has(nm) : String(nm).toUpperCase().includes('MAREVEN')});
+  });
+  const rest1 = C1.map((x,j)=>Math.max(0, x-n1[j])), rest0 = C0.map((x,j)=>Math.max(0, x-n0[j]));
+  if (C1[0] && rest1[0]/C1[0] > 0.0005) rows.push({name:'Вне словаря', a:rest1, b:rest0, special:true});
+
+  let PE = 0;   /* рубли: сколько дало изменение цен самих брендов */
+  rows.forEach(r=>{
+    r.share = C1[0] ? r.a[0]/C1[0]*100 : 0;
+    r.p1 = ppack(r.a); r.p0 = ppack(r.b); r.k1 = pkg(r.a); r.k0 = pkg(r.b);
+    r.dp = (r.p1!=null && r.p0) ? (r.p1/r.p0-1)*100 : null;
+    r.dk = (r.k1!=null && r.k0) ? (r.k1/r.k0-1)*100 : null;
+    /* индекс — от цены упаковки: так сравнивает покупатель у полки. Он зависит от
+       фасовки, поэтому цена килограмма стоит рядом — для сравнения без неё */
+    r.idx = (r.p1!=null && P1) ? r.p1/P1*100 : null;
+    /* доля строки в штуках год назад × изменение её цены, в рублях */
+    r.cr = (r.p1!=null && r.p0!=null && C0[0]) ? (r.b[0]/C0[0])*(r.p1-r.p0) : null;
+    if (r.cr!=null) PE += r.cr;
+  });
+  const shown = rows.filter(r=>r.a[0]>0)
+                    .sort((x,y)=> (x.special?1:0)-(y.special?1:0) || y.a[0]-x.a[0]);
+
+  /* копейки: переход покупателей — остаток округлённых слагаемых, чтобы
+     «год назад + цены + переход = сейчас» на экране сходилось до копейки */
+  const has = pp>=0 && P1!=null && P0!=null;
+  const c1 = has ? Math.round(P1*100) : 0, c0 = has ? Math.round(P0*100) : 0;
+  const ce = has ? Math.round(PE*100) : 0, cm = c1 - c0 - ce;
+  const rubN = c => fmt(Math.abs(c)/100, 2);
+  const rub = c => rubN(c) + '&nbsp;₽';
+
+  /* вывод словами */
+  const chg = (word, d, val) => Math.abs(d)<0.05 ? `${word} почти не изменилась — ${val}`
+      : `${word} ${d>0 ? 'выросла' : 'снизилась'} на ${fmt(Math.abs(d),1)}%, до ${val}`;
+  let lead = '';
+  if (P1!=null && has){
+    /* если обе цены идут в одну сторону, глагол не повторяем: «цена килограмма — на 5,9%» */
+    const same = (dP>0.05 && dK>0.05) || (dP<-0.05 && dK<-0.05);
+    lead = `${plain(p)} против ${plain(pp)}: ${chg('средняя цена упаковки', dP, fmt(P1,2)+'&nbsp;₽')}`
+      + (K1!=null && dK!=null
+          ? '; ' + (same ? `цена килограмма — на ${fmt(Math.abs(dK),1)}%, до ${fmt(K1,0)}&nbsp;₽`
+                         : chg('цена килограмма', dK, fmt(K1,0)+'&nbsp;₽')) + '.'
+          : '.');
+    if (c1 !== c0){
+      const reason = Math.abs(ce) >= Math.abs(cm)
+        ? `${W.who} ${ce>0 ? 'подняли' : 'снизили'} цены`
+        : `покупатели перешли к более ${cm>0 ? 'дорогим' : 'дешёвым'} ${W.to}`;
+      lead += ` Главная причина — ${reason}.`;
+    }
+  } else if (P1!=null){
+    lead = `${plain(p)}: средняя цена упаковки — ${fmt(P1,2)}&nbsp;₽`
+      + (K1!=null ? `, килограмма — ${fmt(K1,0)}&nbsp;₽` : '')
+      + '. Предыдущего периода в базе нет, изменение не считается.';
+  }
+  $('#priceLead').innerHTML = lead;
+
+  /* равенство в рублях: год назад + цены + переход = сейчас */
+  let bridge = '';
+  if (has){
+    const op = c => c<0 ? '−' : '+';
+    const peNote = ce>0 ? `${W.who} подняли цены` : ce<0 ? `${W.who} снизили цены` : `цены ${W.gen} почти не менялись`;
+    const top = shown.filter(r=>!r.special && r.cr!=null && Math.abs(Math.round(r.cr*100))>=1
+                               && (ce>=0 ? r.cr>0 : r.cr<0))
+                     .sort((a,b)=> ce>=0 ? b.cr-a.cr : a.cr-b.cr).slice(0,3);
+    const topNote = (ce!==0 && top.length)
+      ? `<div class="bx-n">из них больше всего: ${top.map(r=>`${r.name} ${signed(r.cr,2)}&nbsp;₽`).join(', ')}</div>` : '';
+    const mixNote = cm>0 ? `покупатели перешли к более дорогим ${W.to}`
+                  : cm<0 ? `покупатели перешли к более дешёвым ${W.to}`
+                  : `покупатели почти не переходили ${W.between}`;
+    const eq = `${rubN(c0)} ₽ ${ce<0?'минус':'плюс'} ${rubN(ce)} ₽ ${cm<0?'минус':'плюс'} ${rubN(cm)} ₽ равно ${rubN(c1)} ₽`;
+    bridge = `<div class="bridge-h">Почему изменилась средняя цена упаковки</div>
+      <div class="bridge-row" role="group" aria-label="${eq}">
+        <div class="bx"><div class="bx-l">Год назад</div><div class="bx-v num">${rub(c0)}</div><div class="bx-n">${plain(pp)}</div></div>
+        <div class="op" aria-hidden="true">${op(ce)}</div>
+        <div class="bx"><div class="bx-l">Цены ${W.gen}</div><div class="bx-v num">${rub(ce)}</div><div class="bx-n">${peNote}</div>${topNote}</div>
+        <div class="op" aria-hidden="true">${op(cm)}</div>
+        <div class="bx"><div class="bx-l">Переход покупателей</div><div class="bx-v num">${rub(cm)}</div><div class="bx-n">${mixNote}</div></div>
+        <div class="op" aria-hidden="true">=</div>
+        <div class="bx now"><div class="bx-l">Сейчас</div><div class="bx-v num">${rub(c1)}</div><div class="bx-n">${plain(p)}, ${signed(dP,1)}% за год</div></div>
+      </div>
+      <p class="bridge-help">Средняя цена упаковки категории меняется по двум причинам: ${W.who} меняют цены — или покупатели
+        переходят от одних ${W.gen} к другим. Если часть покупателей ушла от дешёвого ${W.one} к дорогому, средняя цена
+        категории вырастет, даже когда никто цену не менял.</p>`;
+  }
+  $('#priceBridge').innerHTML = bridge;
+
+  $('#priceHint').innerHTML = (pp>=0 ? `Сравнение с периодом <b>${D.periods[pp]}</b>. ` : '')
+    + `Цена — деньги, делённые на штуки или килограммы за весь период. Индекс — цена упаковки к средней по категории, `
+    + `категория = 100. Он зависит от фасовки, поэтому для сравнения без неё рядом цена килограмма.`;
+
+  const cl = (x,t) => x==null ? 'flat' : x>t ? 'up' : x<-t ? 'down' : 'flat';
+  const tdD = d => d==null ? '<td class="num flat">—</td>' : `<td class="num ${cl(d,.05)}">${signed(d,1)}%</td>`;
+  const tb = $('#priceTable tbody');
+  if (!C1[0]){ tb.innerHTML = '<tr><td colspan="8">Нет данных по этому рынку и периоду.</td></tr>'; return; }
+  let html = `<tr class="totalrow"><td></td><td>Вся категория</td><td class="num">100,0%</td>
+      <td class="num">${P1!=null?fmt(P1,2):'—'}</td>${tdD(dP)}<td class="num">100</td>
+      <td class="num">${K1!=null?fmt(K1,0):'—'}</td>${tdD(dK)}</tr>`;
+  let k = 0;
+  shown.forEach(r=>{
+    const col = dim==='brand' ? colorOf(r.name) : (r.own ? '#e8720c' : '#9aa7b0');
+    const isNew = r.p0==null && pp>=0, nw = '<td class="num flat">новый</td>';
+    html += `<tr class="${r.own?'own':''}${r.special?' special':''}"${r.special?' title="Продажи брендов, которых нет в словаре категории"':''}>
+      <td class="num">${r.special?'':++k}</td>
+      <td class="name">${r.special?'':`<i class="dot" style="background:${col}"></i>`}${r.name}</td>
+      <td class="num">${pct(r.share)}</td>
+      <td class="num">${r.p1!=null?fmt(r.p1,2):'—'}</td>${isNew?nw:tdD(r.dp)}
+      <td class="num">${r.idx!=null?fmt(r.idx,0):'—'}</td>
+      <td class="num">${r.k1!=null?fmt(r.k1,0):'—'}</td>${isNew?nw:tdD(r.dk)}</tr>`;
+  });
+  tb.innerHTML = html;
+}
+▲ КОНЕЦ — до предыдущей строки включительно
+
+========================================================================
+ПРОВЕРКА
+========================================================================
+- python -m py_compile make_dashboard.py — без ошибок.
+- В файле не осталось «priceKpi», «pricekpi», «Вклад, п.п.», «Средняя упаковка».
+- На вкладке «Цены» под выводом стоит равенство:
+  Год назад + Цены брендов ± Переход покупателей = Сейчас.
+- F12 → Console: без красных ошибок.
