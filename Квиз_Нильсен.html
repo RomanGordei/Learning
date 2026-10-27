@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Нильсен: проверка знаний</title>
+<style>
+  :root {
+    --floor: #E4E8EE;
+    --paper: #FFFFFF;
+    --ink: #1C2230;
+    --muted: #5D6575;
+    --line: #CBD2DC;
+    --tag: #FFD23F;
+    --tag-ink: #2A2100;
+    --ok: #1E8653;
+    --ok-bg: #E3F4EA;
+    --bad: #C2352B;
+    --bad-bg: #FBE7E5;
+    --focus: #2F6FEB;
+    --display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", sans-serif;
+    --text: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --receipt: "Consolas", "Lucida Console", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body {
+    margin: 0;
+    background: var(--floor);
+    color: var(--ink);
+    font: 16px/1.5 var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 16px 72px; }
+  [hidden] { display: none !important; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  /* ---------- Старт ---------- */
+  .intro { display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: start; }
+  .intro h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(36px, 7vw, 60px);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px;
+  }
+  .intro .lead { font-size: 18px; color: var(--muted); max-width: 46ch; margin: 0; }
+
+  .shelf-tag {
+    position: relative;
+    width: 168px;
+    padding: 18px 18px 16px 30px;
+    background: var(--tag);
+    color: var(--tag-ink);
+    border-radius: 4px;
+    transform: rotate(-4deg);
+    box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 10px 24px -12px rgba(60,45,0,.45);
+    font-family: var(--display);
+    margin-top: 8px;
+  }
+  .shelf-tag::before {
+    content: "";
+    position: absolute; left: 11px; top: 50%;
+    width: 9px; height: 9px; margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--floor);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.25);
+  }
+  .shelf-tag .t-label { font-size: 15px; font-weight: 600; }
+  .shelf-tag .t-price { display: flex; align-items: flex-start; gap: 6px; line-height: 1; margin-top: 4px; }
+  .shelf-tag .t-big { font-size: 76px; font-weight: 700; letter-spacing: -0.03em; }
+  .shelf-tag .t-small { font-size: 18px; font-weight: 600; padding-top: 10px; }
+  .shelf-tag .t-foot { font-size: 13px; margin-top: 6px; border-top: 1.5px solid rgba(42,33,0,.35); padding-top: 6px; }
+
+  .rules { list-style: none; padding: 0; margin: 36px 0 32px; display: grid; gap: 10px; max-width: 60ch; }
+  .rules li { padding-left: 22px; position: relative; }
+  .rules li::before { content: ""; position: absolute; left: 0; top: .62em; width: 10px; height: 10px; background: var(--tag); border-radius: 2px; }
+
+  .start { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .field { flex: 1 1 280px; }
+  .field label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .field input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+  }
+  .field input:focus-visible { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(47,111,235,.18); }
+  .field .err { color: var(--bad); font-size: 14px; margin-top: 6px; min-height: 1.4em; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 13px 22px;
+    border: 0; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    font-weight: 600; cursor: pointer;
+    min-height: 50px;
+  }
+  .btn:hover { background: #2E3648; }
+  .btn.secondary { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .btn.secondary:hover { background: rgba(28,34,48,.06); }
+  .start .btn { margin-bottom: 26px; }
+
+  /* ---------- Вопрос ---------- */
+  .q-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .q-count { font-family: var(--display); font-size: 18px; font-weight: 600; }
+  .shelf { display: flex; gap: 5px; padding-bottom: 6px; border-bottom: 3px solid #B7BFCB; }
+  .shelf span {
+    width: 22px; height: 30px; border-radius: 3px 3px 1px 1px;
+    background: #D3D9E2;
+  }
+  .shelf span.cur { background: var(--paper); box-shadow: inset 0 0 0 2px var(--ink); }
+  .shelf span.done { background: var(--ink); }
+
+  .card {
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+    box-shadow: 0 1px 2px rgba(28,34,48,.06);
+  }
+  .topic {
+    display: inline-block;
+    background: var(--tag); color: var(--tag-ink);
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    padding: 3px 10px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .q-text {
+    font-family: var(--display);
+    font-size: clamp(21px, 3.4vw, 26px);
+    line-height: 1.25;
+    font-weight: 600;
+    margin: 0 0 22px;
+    max-width: 40ch;
+  }
+  .opts { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .opt {
+    width: 100%;
+    display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start;
+    text-align: left;
+    padding: 13px 14px;
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .opt:hover:not([disabled]) { border-color: var(--ink); }
+  .opt .mark {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: #EEF1F5; font-weight: 700; font-size: 14px;
+    margin-top: -3px;
+  }
+  .opt.is-selected { border-color: var(--ink); background: #F1F3F7; box-shadow: inset 0 0 0 1px var(--ink); }
+  .opt.is-selected .mark { background: var(--ink); color: #fff; }
+
+  .q-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin-top: 22px; }
+  .q-hint { color: var(--muted); font-size: 15px; }
+  .btn:disabled, .btn:disabled:hover { background: #B7BFCB; cursor: not-allowed; }
+
+  /* ---------- Результат ---------- */
+  .result { display: grid; justify-items: center; gap: 22px; }
+  .receipt {
+    position: relative;
+    width: min(400px, 100%);
+    background: var(--paper);
+    font-family: var(--receipt);
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 26px 24px 40px;
+    box-shadow: 0 2px 10px -4px rgba(28,34,48,.25);
+    --zig: 10px;
+    -webkit-mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--zig)) no-repeat,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--zig) * 2) var(--zig) repeat-x;
+            mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--zig)) no-repeat,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--zig) * 2) var(--zig) repeat-x;
+  }
+  .receipt h2 { font-family: var(--receipt); font-size: 15px; text-align: center; margin: 0 0 2px; font-weight: 700; }
+  .receipt .sub { text-align: center; color: var(--muted); margin-bottom: 14px; }
+  .receipt .kv { display: flex; justify-content: space-between; gap: 12px; }
+  .receipt .kv b { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+  .receipt hr { border: 0; border-top: 1.5px dashed #9AA3B2; margin: 12px 0; }
+  .receipt .line { display: grid; grid-template-columns: 22px 1fr 22px; gap: 6px; }
+  .receipt .line .n { color: var(--muted); }
+  .receipt .line .r { text-align: right; font-weight: 700; }
+  .receipt .line .r.ok { color: var(--ok); }
+  .receipt .line .r.bad { color: var(--bad); }
+  .receipt .total { display: flex; justify-content: space-between; font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .receipt .need { display: flex; justify-content: space-between; color: var(--muted); }
+  .stamp {
+    margin: 22px auto 0;
+    width: fit-content;
+    padding: 6px 16px;
+    border: 3px solid currentColor;
+    border-radius: 6px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: .06em;
+    transform: rotate(-6deg);
+  }
+  .stamp.ok { color: var(--ok); }
+  .stamp.bad { color: var(--bad); }
+  .note { text-align: center; max-width: 44ch; margin: 0; font-size: 17px; }
+  .note b { font-weight: 700; }
+
+  .review { width: 100%; margin-top: 18px; }
+  .review h3 { font-family: var(--display); font-size: 24px; margin: 0 0 12px; }
+  .review .item { background: var(--paper); border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; }
+  .review .item .qq { font-weight: 600; margin: 0 0 6px; }
+  .review .item .aa { margin: 0 0 6px; }
+  .review .item .aa span { color: var(--muted); }
+  .review .item .ex { margin: 0; color: var(--muted); }
+  .review .clean { background: var(--paper); border-radius: 10px; padding: 16px 18px; margin: 0; }
+
+  @media (max-width: 620px) {
+    .wrap { padding-top: 28px; }
+    .intro { grid-template-columns: 1fr; gap: 20px; }
+    .shelf-tag { order: -1; width: 150px; }
+    .shelf-tag .t-big { font-size: 64px; }
+    .card { padding: 22px 18px 20px; }
+    .shelf span { width: 16px; height: 24px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp { animation: stamp .35s cubic-bezier(.2,1.6,.4,1) both .15s; }
+    @keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } to { opacity: 1; transform: rotate(-6deg) scale(1); } }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <!-- Старт -->
+  <section id="screen-start">
+    <div class="intro">
+      <div>
+        <h1>Нильсен: проверка знаний</h1>
+        <p class="lead">Десять вопросов по методологии аудита розничной торговли и основным показателям Нильсен.</p>
+      </div>
+      <div class="shelf-tag" aria-label="Для зачёта нужно 7 правильных ответов из 10">
+        <div class="t-label">Зачёт</div>
+        <div class="t-price"><span class="t-big">7</span><span class="t-small">из 10</span></div>
+        <div class="t-foot">правильных ответов</div>
+      </div>
+    </div>
+
+    <ul class="rules">
+      <li>В каждом вопросе один правильный ответ. Выберите вариант и нажмите «Следующий вопрос» — вернуться к прошлым вопросам нельзя.</li>
+      <li>Правильные ответы и разбор ошибок появятся только в конце, после всех десяти вопросов.</li>
+      <li>Для расчётных вопросов можно пользоваться калькулятором.</li>
+      <li>В конце появится чек с результатом: сделайте скриншот и пришлите его Роману.</li>
+    </ul>
+
+    <form class="start" id="start-form" novalidate>
+      <div class="field">
+        <label for="name">Имя и фамилия</label>
+        <input id="name" name="name" autocomplete="name" maxlength="60" placeholder="Например, Анна Смирнова">
+        <div class="err" id="name-err" role="alert"></div>
+      </div>
+      <button class="btn" type="submit">Начать квиз</button>
+    </form>
+  </section>
+
+  <!-- Вопрос -->
+  <section id="screen-quiz" hidden>
+    <div class="q-head">
+      <div class="q-count" id="q-count"></div>
+      <div class="shelf" id="shelf" aria-hidden="true"></div>
+    </div>
+    <div class="card">
+      <div class="topic" id="q-topic"></div>
+      <h2 class="q-text" id="q-text"></h2>
+      <ul class="opts" id="q-opts"></ul>
+      <div class="q-actions">
+        <span class="q-hint" id="q-hint">Выберите один вариант</span>
+        <button class="btn" id="q-next" type="button" disabled></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Результат -->
+  <section id="screen-result" hidden>
+    <div class="result">
+      <div class="receipt" id="receipt"></div>
+      <p class="note">Сделайте скриншот чека и пришлите его <b>Роману</b>.</p>
+      <div class="review" id="review"></div>
+      <button class="btn secondary" id="again" type="button">Пройти ещё раз</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var PASS = 7;
+
+  var QUESTIONS = [
+    {
+      topic: "Юниверс, панель и проекция",
+      q: "Как Нильсен получает продажи по всей России в базе Retail Index?",
+      options: [
+        "Собирает данные в панели — выборке магазинов — и проецирует их на юниверс, оценку всех магазинов",
+        "Аудиторы каждый месяц обходят все магазины России",
+        "Досчитывает продажи по отгрузкам производителей и дистрибьюторов",
+        "Пересчитывает продажи сетей пропорционально численности населения"
+      ],
+      correct: 0,
+      explain: "Аудит идёт в пять шагов: юниверс, панель, сбор данных, проекция, анализ. Юниверс — оценка числа магазинов по переписи (сенсусу) с точностью 3% по стране и 5% по городу. Панель делится на ячейки похожих магазинов, и внутри каждой ячейки данные панели умножаются на проекционный фактор."
+    },
+    {
+      topic: "Ручной аудит",
+      q: "Как Нильсен считает продажи магазина при ручном аудите?",
+      options: [
+        "Остатки на прошлом визите + закупки между визитами − остатки на текущем визите",
+        "Аудитор переписывает продажи из кассы магазина",
+        "Берёт закупки магазина за календарный месяц без учёта остатков",
+        "Магазин сам присылает Нильсен отчёт о продажах"
+      ],
+      correct: 0,
+      explain: "Аудитор приходит в панельный магазин примерно раз в месяц: считает остатки на полке и на складе и смотрит закупки по накладным. Продажи = было на прошлом визите + привезли − осталось сейчас. Продажи из касс Нильсен получает только в электронном виде от сетей-кооператоров."
+    },
+    {
+      topic: "Стандартная ошибка",
+      q: "Какой цифре из базы Нильсен стоит доверять меньше всего?",
+      options: [
+        "Продажам бренда с нумерической дистрибуцией 30% в одном канале одного региона",
+        "Продажам бренда с нумерической дистрибуцией 80% по всей стране",
+        "Продажам всей категории по всей стране",
+        "Всем одинаково: погрешность не зависит от рынка и бренда"
+      ],
+      correct: 0,
+      explain: "Стандартная ошибка растёт, когда рынок уже, а дистрибуция ниже. Для бренда с дистрибуцией 80% и долей 5% Нильсен держит ошибку до 4% по стране, до 10% по региону или каналу и до 15% по каналу в регионе. При дистрибуции 30% ошибка в канале доходит примерно до 30%, поэтому резкие скачки маленьких брендов на узких рынках часто оказываются шумом."
+    },
+    {
+      topic: "Retail Index и Scantrack",
+      q: "Чем база Scantrack отличается от Retail Index?",
+      options: [
+        "Scantrack — сканированные данные ограниченного списка сетей, без проекции, по неделям",
+        "Scantrack охватывает и сети, и традиционную торговлю с проекцией на всю Россию",
+        "Scantrack собирают аудиторы вручную в панельных магазинах",
+        "Ничем, это два названия одной базы"
+      ],
+      correct: 0,
+      explain: "Retail Index покрывает сети и традиционную торговлю, сочетает ручной аудит и данные сетей, проецируется на всю Россию и выходит по месяцам. Scantrack — только сканированные данные сетей-кооператоров, без проекции, по неделям. Недели складываются в месяцы по схеме 4-4-5, поэтому месяцы двух баз не совпадают день в день."
+    },
+    {
+      topic: "Покрываемые каналы",
+      q: "Продажи какого канала не попадают в базу Retail Index?",
+      options: [
+        "Онлайн-торговля: маркетплейсы и интернет-магазины",
+        "Киоски и павильоны",
+        "Традиционные магазины у дома",
+        "Хард-дискаунтеры"
+      ],
+      correct: 0,
+      explain: "Онлайн в Retail Index не входит: его Нильсен измеряет отдельным сервисом E-commerce. Заправки и опт тоже вне Retail Index, а HoReCa, экспорт и институциональные продажи не измеряются вовсе. Киоски, павильоны, традиционные магазины и дискаунтеры покрыты."
+    },
+    {
+      topic: "Размер и формат магазина",
+      q: "Магазин «Пятёрочки» площадью 250 кв. м. Как его классифицирует Нильсен?",
+      options: [
+        "По размеру — минимаркет, по формату — софт-дискаунтер",
+        "По размеру — супермаркет, потому что это крупная сеть",
+        "Только софт-дискаунтер: формат заменяет размер",
+        "По размеру — минимаркет, по формату — хард-дискаунтер"
+      ],
+      correct: 0,
+      explain: "Размер и формат — две разные классификации. По размеру магазины самообслуживания делятся по площади зала: минимаркеты — до 300 кв. м, супермаркеты — от 300 до 2 500 кв. м, гипермаркеты — больше 2 500 кв. м. Поэтому разные магазины «Пятёрочки» бывают и минимаркетами, и супермаркетами. По формату вся сеть — софт-дискаунтер: так Нильсен относит сети с низким уровнем цен по их позиционированию. Хард-дискаунтеры — сети с урезанным ассортиментом и самыми низкими ценами: «Чижик», «Батон», «Моя цена»."
+    },
+    {
+      topic: "Периоды: MAT",
+      q: "Последний доступный месяц — сентябрь 2026 года. Какие месяцы входят в период MAT?",
+      options: [
+        "Октябрь 2025 – сентябрь 2026",
+        "Январь – сентябрь 2026",
+        "Сентябрь 2025 и сентябрь 2026",
+        "Июль – сентябрь 2026"
+      ],
+      correct: 0,
+      explain: "MAT — скользящий год, сумма последних 12 месяцев. Январь – сентябрь — это YTD, период с начала года."
+    },
+    {
+      topic: "Взвешенная дистрибуция",
+      q: "Нумерическая дистрибуция бренда — 20%, взвешенная — 50%. Что это значит?",
+      options: [
+        "Бренд есть в 20% магазинов, и через эти магазины проходит 50% продаж категории",
+        "Бренд есть в 50% магазинов, а его доля рынка — 20%",
+        "В 20% магазинов бренд занимает половину полки",
+        "Это ошибка: взвешенная дистрибуция не бывает выше нумерической"
+      ],
+      correct: 0,
+      explain: "Нумерическая дистрибуция считает магазины, взвешенная — их вес в продажах категории. Если взвешенная выше нумерической, бренд стоит в крупных точках: эффективность дистрибуции 50 / 20 = 2,5."
+    },
+    {
+      topic: "Вклад в изменение (POI)",
+      q: "Категория за год выросла с 1 000 до 1 100 т, бренд A — с 200 до 260 т. Какой вклад бренд A внёс в рост категории?",
+      options: [
+        "+6 п. п.",
+        "+30%",
+        "+60 п. п.",
+        "+10 п. п."
+      ],
+      correct: 0,
+      explain: "Вклад = изменение продаж бренда / продажи категории в прошлом году: (260 − 200) / 1 000 × 100 = 6 п. п. Категория выросла на 10%, и 6 п. п. из них принёс бренд A. +30% — это темп роста самого бренда."
+    },
+    {
+      topic: "Дистрибуция за MAT",
+      q: "Нужна взвешенная дистрибуция бренда за MAT. Как её получить?",
+      options: [
+        "Взять факт со средним значением за период (AVG)",
+        "Сложить взвешенную дистрибуцию за 12 месяцев",
+        "Взять значение за последний месяц периода",
+        "Взять максимальное значение за 12 месяцев"
+      ],
+      correct: 0,
+      explain: "Дистрибуция не складывается: сумма за 12 месяцев даёт бессмысленные числа больше 100. За MAT, YTD и год берём средний факт с пометкой AVG. Складываются только продажи в деньгах, объёме и штуках."
+    }
+  ];
+
+  var LETTERS = ["А", "Б", "В", "Г"];
+  var state = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function show(id) {
+    ["screen-start", "screen-quiz", "screen-result"].forEach(function (s) { $(s).hidden = (s !== id); });
+    window.scrollTo(0, 0);
+  }
+
+  function attemptKey(name) { return "nielsen_quiz_attempts::" + name.trim().toLowerCase(); }
+
+  function bumpAttempt(name) {
+    try {
+      var k = attemptKey(name);
+      var n = parseInt(window.localStorage.getItem(k) || "0", 10) + 1;
+      window.localStorage.setItem(k, String(n));
+      return n;
+    } catch (e) { return null; }
+  }
+
+  function start(name) {
+    state = {
+      name: name,
+      idx: 0,
+      answers: [],
+      orders: QUESTIONS.map(function (q) { return shuffle(q.options.map(function (_, i) { return i; })); })
+    };
+    show("screen-quiz");
+    renderQuestion();
+  }
+
+  function renderShelf() {
+    var shelf = $("shelf");
+    shelf.innerHTML = "";
+    for (var i = 0; i < QUESTIONS.length; i++) {
+      var s = el("span");
+      if (i < state.answers.length) s.className = "done";
+      else if (i === state.idx) s.className = "cur";
+      shelf.appendChild(s);
+    }
+  }
+
+  function renderQuestion() {
+    var q = QUESTIONS[state.idx];
+    var order = state.orders[state.idx];
+    state.pending = null;
+    $("q-count").textContent = "Вопрос " + (state.idx + 1) + " из " + QUESTIONS.length;
+    $("q-topic").textContent = q.topic;
+    $("q-text").textContent = q.q;
+    var list = $("q-opts");
+    list.innerHTML = "";
+    order.forEach(function (origIdx, pos) {
+      var li = el("li");
+      var b = el("button", "opt");
+      b.type = "button";
+      b.setAttribute("data-orig", String(origIdx));
+      b.setAttribute("aria-pressed", "false");
+      b.appendChild(el("span", "mark", LETTERS[pos]));
+      b.appendChild(el("span", null, q.options[origIdx]));
+      b.addEventListener("click", function () { select(origIdx); });
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    var nextBtn = $("q-next");
+    nextBtn.textContent = state.idx === QUESTIONS.length - 1 ? "Показать результат" : "Следующий вопрос";
+    nextBtn.disabled = true;
+    $("q-hint").textContent = "Выберите один вариант";
+    renderShelf();
+    var first = list.querySelector("button");
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  function select(origIdx) {
+    state.pending = origIdx;
+    Array.prototype.forEach.call($("q-opts").querySelectorAll(".opt"), function (b) {
+      var on = parseInt(b.getAttribute("data-orig"), 10) === origIdx;
+      if (on) b.classList.add("is-selected"); else b.classList.remove("is-selected");
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    $("q-next").disabled = false;
+    $("q-hint").textContent = "Ответ можно поменять до перехода к следующему вопросу";
+  }
+
+  function next() {
+    if (state.pending === null || state.pending === undefined) return;
+    var q = QUESTIONS[state.idx];
+    state.answers.push({ chosen: state.pending, ok: state.pending === q.correct });
+    state.pending = null;
+    if (state.idx < QUESTIONS.length - 1) {
+      state.idx++;
+      renderQuestion();
+      window.scrollTo(0, 0);
+    } else {
+      finish();
+    }
+  }
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  function finish() {
+    var score = state.answers.filter(function (a) { return a.ok; }).length;
+    var passed = score >= PASS;
+    var attempt = bumpAttempt(state.name);
+    var d = new Date();
+    var stamp = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear() + ", " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+
+    var r = $("receipt");
+    r.innerHTML = "";
+    r.appendChild(el("h2", null, "Нильсен: проверка знаний"));
+    r.appendChild(el("div", "sub", "Результат квиза"));
+
+    function kv(k, v) {
+      var row = el("div", "kv");
+      row.appendChild(el("span", null, k));
+      row.appendChild(el("b", null, v));
+      r.appendChild(row);
+    }
+    kv("Участник", state.name);
+    kv("Дата", stamp);
+    if (attempt !== null) kv("Попытка", String(attempt));
+
+    r.appendChild(el("hr"));
+    QUESTIONS.forEach(function (q, i) {
+      var a = state.answers[i];
+      var line = el("div", "line");
+      line.appendChild(el("span", "n", String(i + 1)));
+      line.appendChild(el("span", null, q.topic));
+      var res = el("span", "r " + (a.ok ? "ok" : "bad"), a.ok ? "✓" : "✗");
+      res.setAttribute("aria-label", a.ok ? "верно" : "неверно");
+      line.appendChild(res);
+      r.appendChild(line);
+    });
+    r.appendChild(el("hr"));
+
+    var total = el("div", "total");
+    total.appendChild(el("span", null, "Итого"));
+    total.appendChild(el("span", null, score + " из " + QUESTIONS.length));
+    r.appendChild(total);
+    var need = el("div", "need");
+    need.appendChild(el("span", null, "Для зачёта"));
+    need.appendChild(el("span", null, PASS + " из " + QUESTIONS.length));
+    r.appendChild(need);
+    r.appendChild(el("div", "stamp " + (passed ? "ok" : "bad"), passed ? "ЗАЧТЕНО" : "НЕ ЗАЧТЕНО"));
+
+    var rv = $("review");
+    rv.innerHTML = "";
+    var wrong = [];
+    state.answers.forEach(function (a, i) { if (!a.ok) wrong.push(i); });
+    rv.appendChild(el("h3", null, wrong.length ? "Разбор ошибок" : "Ошибок нет"));
+    if (!wrong.length) {
+      rv.appendChild(el("p", "clean", "Все десять ответов верные."));
+    }
+    wrong.forEach(function (i) {
+      var q = QUESTIONS[i];
+      var a = state.answers[i];
+      var item = el("div", "item");
+      item.appendChild(el("p", "qq", (i + 1) + ". " + q.q));
+      var p1 = el("p", "aa");
+      p1.appendChild(el("span", null, "Ваш ответ: "));
+      p1.appendChild(document.createTextNode(q.options[a.chosen]));
+      item.appendChild(p1);
+      var p2 = el("p", "aa");
+      p2.appendChild(el("span", null, "Правильный ответ: "));
+      p2.appendChild(document.createTextNode(q.options[q.correct]));
+      item.appendChild(p2);
+      item.appendChild(el("p", "ex", q.explain));
+      rv.appendChild(item);
+    });
+
+    show("screen-result");
+  }
+
+  $("start-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("name").value.replace(/\s+/g, " ").trim();
+    if (name.length < 3) {
+      $("name-err").textContent = "Введите имя и фамилию, чтобы они появились в чеке с результатом.";
+      $("name").focus();
+      return;
+    }
+    $("name-err").textContent = "";
+    start(name);
+  });
+
+  $("q-next").addEventListener("click", next);
+
+  $("again").addEventListener("click", function () {
+    var name = state ? state.name : "";
+    state = null;
+    $("name").value = name;
+    show("screen-start");
+    $("name").focus();
+  });
+})();
+</script>
+</body>
+</html>
